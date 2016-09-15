@@ -23,10 +23,6 @@ func destroyWString(s *WString) {
 	C.wstring_destroy(s.c)
 }
 
-func (s *WString) Destroy() {
-	destroyWString(s)
-}
-
 // Get returns a slice of the string data. Note that there is no copying here.
 // Do NOT mess with return value. It is a const char* in C++ and is readonly.
 func (s *WString) Get() []byte {
