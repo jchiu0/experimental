@@ -3,7 +3,6 @@
 #include <string>
 
 #include "wstring.h"
-#include "_cgo_export.h"
 
 struct wstring_t { std::string rep; };
 
