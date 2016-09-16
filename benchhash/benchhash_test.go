@@ -8,7 +8,7 @@ import (
 
 const (
 	hashMapSize   = 100000
-	numGoRoutines = 1000
+	numGoRoutines = 10
 )
 
 type hashPair struct {
