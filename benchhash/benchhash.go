@@ -179,8 +179,8 @@ func MultiWriteNoChan(n, q int, newFunc func() HashMap, b *testing.B) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-// WriteRead tests
-// Reads and writes happen at the same time.
+// WriteRead(n)
+// Reads and writes happen at the same time. Do n/3 writes, 2n/3 reads.
 //////////////////////////////////////////////////////////////////////////////////
 
 // ReadWriteChan does read and write concurrently using channels. Use only one
@@ -198,7 +198,7 @@ func ReadWriteChan(n, qRead, qWrite int, newFunc func() HashMap, b *testing.B) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				for key := range cRead { // Pull work from channel.
+				for key := range cRead { // Pull work from read channel.
 					h.Get(key)
 				}
 			}()
@@ -206,9 +206,9 @@ func ReadWriteChan(n, qRead, qWrite int, newFunc func() HashMap, b *testing.B) {
 
 		for j := 0; j < qWrite; j++ { // Write goroutines.
 			wg.Add(1)
-			go func() { // Write goroutine.
+			go func() {
 				defer wg.Done()
-				for kv := range cWrite {
+				for kv := range cWrite { // Pull work from write channel.
 					h.Put(kv.Key, kv.Val)
 				}
 			}()
