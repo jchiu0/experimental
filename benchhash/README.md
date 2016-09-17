@@ -18,9 +18,11 @@ Each of the three setups has the same structure below:
 
 Note that we do not use channels at all as that will cause unnecessary locking.
 
-For the `ReadWrite` setup, we ask the user for an addition parameter `fracRead`. There will be `fracRead * q` goroutines which do reads and `(1-fracRead) * q` goroutines which do writes. To be clear, each goroutine scans `n/q` elements.
+For the `ReadWrite` setup, we ask the user for an additional parameter `fracRead`. There will be `fracRead * q` goroutines which do reads and `(1-fracRead) * q` goroutines which do writes. To be clear, each goroutine scans `n/q` elements.
 
 We did not use `RunParallel` because it doesn't fit the structure of our test setup.
+
+Please see `benchhash.go` for the test setups.
 
 # Results
 
