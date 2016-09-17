@@ -54,10 +54,7 @@ func NewShardedGoMap(numShards int) HashMap {
 	return r
 }
 
-func NewShardedGoMap4() HashMap {
-	return NewShardedGoMap(4)
-}
-
-func NewShardedGoMap8() HashMap {
-	return NewShardedGoMap(8)
-}
+func NewShardedGoMap4() HashMap  { return NewShardedGoMap(4) }
+func NewShardedGoMap8() HashMap  { return NewShardedGoMap(8) }
+func NewShardedGoMap16() HashMap { return NewShardedGoMap(16) }
+func NewShardedGoMap32() HashMap { return NewShardedGoMap(32) }

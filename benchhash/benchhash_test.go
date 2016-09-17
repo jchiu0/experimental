@@ -1,18 +1,11 @@
 package benchhash
 
 import (
-	"log"
+	"flag"
+	"fmt"
+	"os"
 	"testing"
 )
-
-const (
-	hashMapSize   = 100000
-	numGoRoutines = 1000
-)
-
-func init() {
-	log.Printf("n=%d q=%d", hashMapSize, numGoRoutines)
-}
 
 type hashPair struct {
 	label   string
@@ -20,18 +13,28 @@ type hashPair struct {
 }
 
 var (
+	benchn    = flag.Int("benchn", 100000, "Number of elements to get/put to hash per rep.")
+	benchq    = flag.Int("benchq", 10, "Number of goroutines per rep.")
 	hashPairs = []hashPair{
 		hashPair{"GoMap", NewGoMap},
 		hashPair{"GotomicMap", NewGotomicMap},
 		hashPair{"ShardedGoMap4", NewShardedGoMap4},
 		hashPair{"ShardedGoMap8", NewShardedGoMap8},
+		hashPair{"ShardedGoMap16", NewShardedGoMap16},
+		hashPair{"ShardedGoMap32", NewShardedGoMap32},
 	}
 )
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	fmt.Printf("n=%d q=%d\n", *benchn, *benchq)
+	os.Exit(m.Run())
+}
 
 func BenchmarkRead(b *testing.B) {
 	for _, p := range hashPairs {
 		b.Run(p.label, func(b *testing.B) {
-			MultiRead(hashMapSize, numGoRoutines, p.newFunc, b)
+			MultiRead(*benchn, *benchq, p.newFunc, b)
 		})
 	}
 }
@@ -39,16 +42,16 @@ func BenchmarkRead(b *testing.B) {
 func BenchmarkWrite(b *testing.B) {
 	for _, p := range hashPairs {
 		b.Run(p.label, func(b *testing.B) {
-			MultiWrite(hashMapSize, numGoRoutines, p.newFunc, b)
+			MultiWrite(*benchn, *benchq, p.newFunc, b)
 		})
 	}
 }
 
 func benchmarkReadWrite(b *testing.B, fracRead float64) {
-	numReadGoRoutines := int(fracRead * float64(numGoRoutines))
+	numReadGoRoutines := int(fracRead * float64(*benchq))
 	for _, p := range hashPairs {
 		b.Run(p.label, func(b *testing.B) {
-			ReadWrite(hashMapSize, numReadGoRoutines, numGoRoutines-numReadGoRoutines,
+			ReadWrite(*benchn, numReadGoRoutines, *benchq-numReadGoRoutines,
 				p.newFunc, b)
 		})
 	}
