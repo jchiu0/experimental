@@ -31,8 +31,10 @@ Run `run.sh` to run the benchmarks. The results are found in the `results` subdi
 Here is the main line in `run.sh`:
 
 ```
-go test -cpu 2 -benchn 100000 -benchq $q -bench=. > results/benchhash.q$q.txt
+go test -cpu $NUMCPU -benchn 100000 -benchq $q -bench=. > results/benchhash.q$q.txt
 ```
+
+You might want to want to tweak the parameter `NUMCPU` in `run.sh`.
 
 ## Interpreting results
 
