@@ -39,3 +39,53 @@ go test -cpu 2 -benchn 100000 -benchq $q -bench=. > results/benchhash.q$q.txt
 Note that `BenchReadWrite7` means `7/10` of the goroutines are doing reads. Generally, reads are cheaper, so `BenchReadWrite9` should take less time than `BenchReadWrite1`.
 
 Note that `ShardedGoMap16` means we use 16 shards of GoMaps.
+
+Here are some results for `q=1000`.
+
+```
+n=100000 q=1000
+BenchmarkRead/GoMap-2   	     200	   6882485 ns/op
+BenchmarkRead/GotomicMap-2         	     100	  20416675 ns/op
+BenchmarkRead/ShardedGoMap4-2      	     200	   6269036 ns/op
+BenchmarkRead/ShardedGoMap8-2      	     300	   5677571 ns/op
+BenchmarkRead/ShardedGoMap16-2     	     300	   5333423 ns/op
+BenchmarkRead/ShardedGoMap32-2     	     300	   5153572 ns/op
+BenchmarkWrite/GoMap-2             	      50	  20158550 ns/op
+BenchmarkWrite/GotomicMap-2        	      10	 102329390 ns/op
+BenchmarkWrite/ShardedGoMap4-2     	      50	  20343076 ns/op
+BenchmarkWrite/ShardedGoMap8-2     	     100	  16701933 ns/op
+BenchmarkWrite/ShardedGoMap16-2    	     100	  15416442 ns/op
+BenchmarkWrite/ShardedGoMap32-2    	     100	  14433085 ns/op
+BenchmarkReadWrite1/GoMap-2        	     100	  17983497 ns/op
+BenchmarkReadWrite1/GotomicMap-2   	      20	 101842924 ns/op
+BenchmarkReadWrite1/ShardedGoMap4-2         	      50	  20708505 ns/op
+BenchmarkReadWrite1/ShardedGoMap8-2         	     100	  17904104 ns/op
+BenchmarkReadWrite1/ShardedGoMap16-2        	     100	  15886365 ns/op
+BenchmarkReadWrite1/ShardedGoMap32-2        	     100	  14662240 ns/op
+BenchmarkReadWrite3/GoMap-2                 	     100	  17667777 ns/op
+BenchmarkReadWrite3/GotomicMap-2            	      20	  81755781 ns/op
+BenchmarkReadWrite3/ShardedGoMap4-2         	     100	  19808166 ns/op
+BenchmarkReadWrite3/ShardedGoMap8-2         	     100	  17530502 ns/op
+BenchmarkReadWrite3/ShardedGoMap16-2        	     100	  15399216 ns/op
+BenchmarkReadWrite3/ShardedGoMap32-2        	     100	  13931323 ns/op
+BenchmarkReadWrite5/GoMap-2                 	     100	  15603580 ns/op
+BenchmarkReadWrite5/GotomicMap-2            	      30	  59283460 ns/op
+BenchmarkReadWrite5/ShardedGoMap4-2         	     100	  17145842 ns/op
+BenchmarkReadWrite5/ShardedGoMap8-2         	     100	  15334110 ns/op
+BenchmarkReadWrite5/ShardedGoMap16-2        	     100	  13167841 ns/op
+BenchmarkReadWrite5/ShardedGoMap32-2        	     100	  11573469 ns/op
+BenchmarkReadWrite7/GoMap-2                 	     100	  15413127 ns/op
+BenchmarkReadWrite7/GotomicMap-2            	      30	  45866904 ns/op
+BenchmarkReadWrite7/ShardedGoMap4-2         	     100	  15388264 ns/op
+BenchmarkReadWrite7/ShardedGoMap8-2         	     100	  13555623 ns/op
+BenchmarkReadWrite7/ShardedGoMap16-2        	     100	  11592148 ns/op
+BenchmarkReadWrite7/ShardedGoMap32-2        	     100	  10214670 ns/op
+BenchmarkReadWrite9/GoMap-2                 	     100	  13929774 ns/op
+BenchmarkReadWrite9/GotomicMap-2            	      50	  28248601 ns/op
+BenchmarkReadWrite9/ShardedGoMap4-2         	     100	  11725283 ns/op
+BenchmarkReadWrite9/ShardedGoMap8-2         	     200	   9930883 ns/op
+BenchmarkReadWrite9/ShardedGoMap16-2        	     200	   8302751 ns/op
+BenchmarkReadWrite9/ShardedGoMap32-2        	     200	   7418499 ns/op
+PASS
+ok  	github.com/jchiu0/experimental/benchhash	71.801s
+```
