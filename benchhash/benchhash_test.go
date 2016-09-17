@@ -1,15 +1,18 @@
 package benchhash
 
 import (
-	//	"log"
-	//	"runtime"
+	"log"
 	"testing"
 )
 
 const (
 	hashMapSize   = 100000
-	numGoRoutines = 10
+	numGoRoutines = 1000
 )
+
+func init() {
+	log.Printf("n=%d q=%d", hashMapSize, numGoRoutines)
+}
 
 type hashPair struct {
 	label   string
@@ -25,58 +28,34 @@ var (
 	}
 )
 
-func BenchmarkSingleRead(b *testing.B) {
+func BenchmarkRead(b *testing.B) {
 	for _, p := range hashPairs {
 		b.Run(p.label, func(b *testing.B) {
-			SingleRead(hashMapSize, p.newFunc, b)
+			MultiRead(hashMapSize, numGoRoutines, p.newFunc, b)
 		})
 	}
 }
 
-func BenchmarkMultiReadChan(b *testing.B) {
+func BenchmarkWrite(b *testing.B) {
 	for _, p := range hashPairs {
 		b.Run(p.label, func(b *testing.B) {
-			MultiReadChan(hashMapSize, numGoRoutines, p.newFunc, b)
+			MultiWrite(hashMapSize, numGoRoutines, p.newFunc, b)
 		})
 	}
 }
 
-func BenchmarkMultiReadNoChan(b *testing.B) {
+func benchmarkReadWrite(b *testing.B, fracRead float64) {
+	numReadGoRoutines := int(fracRead * float64(numGoRoutines))
 	for _, p := range hashPairs {
 		b.Run(p.label, func(b *testing.B) {
-			MultiReadNoChan(hashMapSize, numGoRoutines, p.newFunc, b)
+			ReadWrite(hashMapSize, numReadGoRoutines, numGoRoutines-numReadGoRoutines,
+				p.newFunc, b)
 		})
 	}
 }
 
-func BenchmarkSingleWrite(b *testing.B) {
-	for _, p := range hashPairs {
-		b.Run(p.label, func(b *testing.B) {
-			SingleWrite(hashMapSize, p.newFunc, b)
-		})
-	}
-}
-
-func BenchmarkMultiWriteChan(b *testing.B) {
-	for _, p := range hashPairs {
-		b.Run(p.label, func(b *testing.B) {
-			MultiWriteChan(hashMapSize, numGoRoutines, p.newFunc, b)
-		})
-	}
-}
-
-func BenchmarkMultiWriteNoChan(b *testing.B) {
-	for _, p := range hashPairs {
-		b.Run(p.label, func(b *testing.B) {
-			MultiWriteNoChan(hashMapSize, numGoRoutines, p.newFunc, b)
-		})
-	}
-}
-
-func BenchmarkReadWriteChan(b *testing.B) {
-	for _, p := range hashPairs {
-		b.Run(p.label, func(b *testing.B) {
-			ReadWriteChan(hashMapSize, numGoRoutines, numGoRoutines, p.newFunc, b)
-		})
-	}
-}
+func BenchmarkReadWrite1(b *testing.B) { benchmarkReadWrite(b, 0.1) }
+func BenchmarkReadWrite3(b *testing.B) { benchmarkReadWrite(b, 0.3) }
+func BenchmarkReadWrite5(b *testing.B) { benchmarkReadWrite(b, 0.5) }
+func BenchmarkReadWrite7(b *testing.B) { benchmarkReadWrite(b, 0.7) }
+func BenchmarkReadWrite9(b *testing.B) { benchmarkReadWrite(b, 0.9) }

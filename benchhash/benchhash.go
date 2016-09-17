@@ -7,10 +7,6 @@ import (
 	"testing"
 )
 
-func init() {
-	log.Printf("Nothing")
-}
-
 type HashMap interface {
 	Get(key uint32) (uint32, bool)
 	Put(key, val uint32)
@@ -36,192 +32,93 @@ func intPairArray(n int) []KeyValPair {
 	return a
 }
 
-//////////////////////////////////////////////////////////////////////////////////
-// ReadTest(n)
-// Read n times from an empty hash map.
-//////////////////////////////////////////////////////////////////////////////////
-
-// SingleRead does single-threaded read.
-func SingleRead(n int, newFunc func() HashMap, b *testing.B) {
-	work := intArray(n)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		h := newFunc()
-		for j := 0; j < n; j++ {
-			h.Get(work[j])
-		}
+func check(n, q int) {
+	if (n % q) != 0 {
+		log.Fatalf("%d not divisible by %d", n, q)
 	}
 }
 
-// MultiReadChan gets n items using q Go routines. Use a channel to pass work.
-func MultiReadChan(n, q int, newFunc func() HashMap, b *testing.B) {
+func workRange(n, q, j int) (int, int) {
+	return (n / q) * j, (n / q) * (j + 1)
+}
+
+// MultiRead gets n items using q Go routines. Do not use a channel / locking queue.
+func MultiRead(n, q int, newFunc func() HashMap, b *testing.B) {
+	check(n, q)
 	work := intArray(n)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ { // N reps.
 		h := newFunc()
-		c := make(chan uint32)
 		var wg sync.WaitGroup
 		for j := 0; j < q; j++ {
 			wg.Add(1)
-			go func() {
+			go func(j int) {
 				defer wg.Done()
-				for key := range c { // Pull work from channel.
-					h.Get(key)
+				start, end := workRange(n, q, j)
+				for k := start; k < end; k++ {
+					h.Get(work[k])
 				}
-			}()
-		}
-		for _, key := range work {
-			c <- key
-		}
-		close(c)
-		wg.Wait()
-	}
-}
-
-// MultiReadNoChan gets n items using q Go routines. Use a channel to pass work.
-func MultiReadNoChan(n, q int, newFunc func() HashMap, b *testing.B) {
-	work := intArray(n)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ { // N reps.
-		var ptr int             // Next input is work[ptr].
-		var ptrMutex sync.Mutex // Guards the variable "ptr".
-		h := newFunc()
-		var wg sync.WaitGroup
-		for j := 0; j < q; j++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for {
-					ptrMutex.Lock()
-					p := ptr
-					ptr++
-					ptrMutex.Unlock()
-					if p >= n {
-						break
-					}
-					h.Get(work[p])
-				}
-			}()
+			}(j)
 		}
 		wg.Wait()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////////
-// WriteTest(n)
-// Write n times to an empty hash map.
-//////////////////////////////////////////////////////////////////////////////////
-
-// SingleWrite does single-threaded write.
-func SingleWrite(n int, newFunc func() HashMap, b *testing.B) {
-	work := intPairArray(n)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		h := newFunc()
-		for _, kv := range work {
-			h.Put(kv.Key, kv.Val)
-		}
-	}
-}
-
-// MultiWriteChan writes n items using q Go routines. Use a channel to pass work.
-func MultiWriteChan(n, q int, newFunc func() HashMap, b *testing.B) {
+// MultiWrite writes n items using q Go routines.
+func MultiWrite(n, q int, newFunc func() HashMap, b *testing.B) {
+	check(n, q)
 	work := intPairArray(n)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ { // N reps.
 		h := newFunc()
-		c := make(chan KeyValPair)
 		var wg sync.WaitGroup
 		for j := 0; j < q; j++ {
 			wg.Add(1)
-			go func() {
+			go func(j int) {
 				defer wg.Done()
-				for kv := range c { // Pull work from channel.
-					h.Put(kv.Key, kv.Val)
+				start, end := workRange(n, q, j)
+				for k := start; k < end; k++ {
+					h.Put(work[k].Key, work[k].Val)
 				}
-			}()
+			}(j)
 		}
-		for _, kv := range work { // Push work into channel.
-			c <- kv
-		}
-		close(c)
 		wg.Wait()
 	}
 }
 
-// MultiWriteNoChan gets n items using q Go routines. Use a channel to pass work.
-func MultiWriteNoChan(n, q int, newFunc func() HashMap, b *testing.B) {
+// ReadWrite does read and write in parallel.
+// qRead is num goroutines for reading.
+// qWrite is num goroutines for writing.
+// Assume n divisible by (qRead + qWrite).
+func ReadWrite(n, qRead, qWrite int, newFunc func() HashMap, b *testing.B) {
+	q := qRead + qWrite
+	check(n, q)
 	work := intPairArray(n)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ { // N reps.
-		var ptr int             // Next input is work[ptr].
-		var ptrMutex sync.Mutex // Guards the variable "ptr".
 		h := newFunc()
-		var wg sync.WaitGroup
-		for j := 0; j < q; j++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for {
-					ptrMutex.Lock()
-					p := ptr
-					ptr++
-					ptrMutex.Unlock()
-					if p >= n {
-						break
-					}
-					h.Put(work[p].Key, work[p].Val)
-				}
-			}()
-		}
-		wg.Wait()
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-// WriteRead(n)
-// Reads and writes happen at the same time. Do n/3 writes, 2n/3 reads.
-//////////////////////////////////////////////////////////////////////////////////
-
-// ReadWriteChan does read and write concurrently using channels. Use only one
-// goroutines for writes. Use q goroutines for reads.
-func ReadWriteChan(n, qRead, qWrite int, newFunc func() HashMap, b *testing.B) {
-	workWrite := intPairArray(n / 3)
-	workRead := intArray(n - len(workWrite))
-	b.StartTimer()
-	for i := 0; i < b.N; i++ { // N reps.
-		h := newFunc()
-		cRead := make(chan uint32)
-		cWrite := make(chan KeyValPair)
 		var wg sync.WaitGroup
 		for j := 0; j < qRead; j++ { // Read goroutines.
 			wg.Add(1)
-			go func() {
+			go func(j int) {
 				defer wg.Done()
-				for key := range cRead { // Pull work from read channel.
-					h.Get(key)
+				start, end := workRange(n, q, j)
+				for k := start; k < end; k++ {
+					h.Get(work[k].Key)
 				}
-			}()
+			}(j)
 		}
 
-		for j := 0; j < qWrite; j++ { // Write goroutines.
+		for j := qRead; j < q; j++ { // Write goroutines.
 			wg.Add(1)
-			go func() {
+			go func(j int) {
 				defer wg.Done()
-				for kv := range cWrite { // Pull work from write channel.
-					h.Put(kv.Key, kv.Val)
+				start, end := workRange(n, q, j)
+				for k := start; k < end; k++ {
+					h.Put(work[k].Key, work[k].Val)
 				}
-			}()
+			}(j)
 		}
-		for _, key := range workRead {
-			cRead <- key
-		}
-		for _, kv := range workWrite {
-			cWrite <- kv
-		}
-
-		close(cRead)
-		close(cWrite)
 		wg.Wait()
 	}
 }
