@@ -16,7 +16,7 @@ Each of the three setups has the same structure below:
 	* Each goroutine will either read or write to `h`.
 	* Each goroutine works on an equal part of the array `work`.
 
-Note that we do not use channels at all as that will cause unnecessary locking.
+Note that we do not use channels at all as that will cause some unnecessary blocking.
 
 For the `ReadWrite` setup, we ask the user for an additional parameter `fracRead`. There will be `fracRead * q` goroutines which do reads and `(1-fracRead) * q` goroutines which do writes. To be clear, each goroutine scans `n/q` elements.
 
